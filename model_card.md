@@ -61,14 +61,7 @@ Prompts:
 
 ## 6. Limitations and Bias 
 
-Where the system struggles or behaves unfairly. 
-
-Prompts:  
-
-- Features it does not consider  
-- Genres or moods that are underrepresented  
-- Cases where the system overfits to one preference  
-- Ways the scoring might unintentionally favor some users  
+One weakness in this recommender is that it now over-prioritizes energy closeness more than genre. In my `Acoustic Metal Campfire` experiment, `Porchlight Letters`, a folk song, ranked above the metal track because its low energy and high acousticness fit the profile better, even though the genre did not match. This can create a vibe-based filter bubble where users keep getting songs with similar surface traits instead of songs from the style they actually asked for. The problem is worse because the catalog only has 18 songs and most genres and moods appear once, so users with unusual or underrepresented tastes have very few strong matches.
 
 ---
 
