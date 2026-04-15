@@ -39,16 +39,13 @@ class Recommender:
         self.songs = songs
 
     def recommend(self, user: UserProfile, k: int = 5) -> List[Song]:
-        user_prefs = asdict(user)
-        scored_songs = []
-
-        for song in self.songs:
-            song_dict = asdict(song)
-            score, _ = score_song(user_prefs, song_dict)
-            scored_songs.append((song, score))
-
-        scored_songs.sort(key=lambda item: item[1], reverse=True)
-        return [song for song, _ in scored_songs[:k]]
+        ranked_songs = recommend_songs(
+            asdict(user),
+            [asdict(song) for song in self.songs],
+            k=k,
+        )
+        songs_by_id = {song.id: song for song in self.songs}
+        return [songs_by_id[song_dict["id"]] for song_dict, _, _ in ranked_songs]
 
     def explain_recommendation(self, user: UserProfile, song: Song) -> str:
         score, reasons = score_song(asdict(user), asdict(song))
@@ -81,6 +78,9 @@ def load_songs(csv_path: str) -> List[Dict]:
 
     return songs
 
+def _get_preference(user_prefs: Dict, preferred_key: str, legacy_key: str, default=None):
+    return user_prefs.get(preferred_key, user_prefs.get(legacy_key, default))
+
 def score_song(user_prefs: Dict, song: Dict) -> Tuple[float, List[str]]:
     """
     Scores one song against a user's taste profile.
@@ -89,9 +89,9 @@ def score_song(user_prefs: Dict, song: Dict) -> Tuple[float, List[str]]:
     reasons: List[str] = []
     score = 0.0
 
-    favorite_genre = user_prefs.get("favorite_genre", user_prefs.get("genre"))
-    favorite_mood = user_prefs.get("favorite_mood", user_prefs.get("mood"))
-    target_energy = float(user_prefs.get("target_energy", user_prefs.get("energy", 0.0)))
+    favorite_genre = _get_preference(user_prefs, "favorite_genre", "genre")
+    favorite_mood = _get_preference(user_prefs, "favorite_mood", "mood")
+    target_energy = float(_get_preference(user_prefs, "target_energy", "energy", 0.0))
     likes_acoustic = bool(user_prefs.get("likes_acoustic", False))
 
     if song["mood"] == favorite_mood:
@@ -125,12 +125,23 @@ def recommend_songs(user_prefs: Dict, songs: List[Dict], k: int = 5) -> List[Tup
     Functional implementation of the recommendation logic.
     Required by src/main.py
     """
-    scored_songs: List[Tuple[Dict, float, str]] = []
+    favorite_mood = _get_preference(user_prefs, "favorite_mood", "mood")
+    favorite_genre = _get_preference(user_prefs, "favorite_genre", "genre")
 
-    for song in songs:
-        score, reasons = score_song(user_prefs, song)
-        explanation = ", ".join(reasons)
-        scored_songs.append((song, score, explanation))
+    ranked_songs = sorted(
+        (
+            (
+                song,
+                score,
+                ", ".join(reasons),
+                song["mood"] == favorite_mood,
+                song["genre"] == favorite_genre,
+            )
+            for song in songs
+            for score, reasons in [score_song(user_prefs, song)]
+        ),
+        key=lambda item: (item[1], item[3], item[4]),
+        reverse=True,
+    )
 
-    scored_songs.sort(key=lambda item: item[1], reverse=True)
-    return scored_songs[:k]
+    return [(song, score, explanation) for song, score, explanation, _, _ in ranked_songs[:k]]

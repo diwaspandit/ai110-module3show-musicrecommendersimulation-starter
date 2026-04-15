@@ -131,3 +131,56 @@ def test_recommend_songs_returns_ranked_results_with_explanations():
     assert top_song["mood"] == "happy"
     assert top_score >= results[1][1]
     assert explanation.strip() != ""
+
+
+def test_recommend_songs_respects_k_limit():
+    user_prefs = {
+        "favorite_genre": "pop",
+        "favorite_mood": "happy",
+        "target_energy": 0.8,
+        "likes_acoustic": False,
+    }
+    songs = [
+        {
+            "id": 1,
+            "title": "Test Pop Track",
+            "artist": "Test Artist",
+            "genre": "pop",
+            "mood": "happy",
+            "energy": 0.8,
+            "tempo_bpm": 120,
+            "valence": 0.9,
+            "danceability": 0.8,
+            "acousticness": 0.2,
+        },
+        {
+            "id": 2,
+            "title": "Second Match",
+            "artist": "Test Artist",
+            "genre": "pop",
+            "mood": "happy",
+            "energy": 0.75,
+            "tempo_bpm": 115,
+            "valence": 0.8,
+            "danceability": 0.7,
+            "acousticness": 0.3,
+        },
+        {
+            "id": 3,
+            "title": "Weak Match",
+            "artist": "Test Artist",
+            "genre": "ambient",
+            "mood": "peaceful",
+            "energy": 0.2,
+            "tempo_bpm": 65,
+            "valence": 0.5,
+            "danceability": 0.3,
+            "acousticness": 0.9,
+        },
+    ]
+
+    results = recommend_songs(user_prefs, songs, k=2)
+
+    assert len(results) == 2
+    assert results[0][1] >= results[1][1]
+    assert all(result[0]["id"] != 3 for result in results)
