@@ -39,6 +39,7 @@ class Recommender:
         self.songs = songs
 
     def recommend(self, user: UserProfile, k: int = 5) -> List[Song]:
+        """Return the top-k songs ranked for the given user."""
         ranked_songs = recommend_songs(
             asdict(user),
             [asdict(song) for song in self.songs],
@@ -48,15 +49,13 @@ class Recommender:
         return [songs_by_id[song_dict["id"]] for song_dict, _, _ in ranked_songs]
 
     def explain_recommendation(self, user: UserProfile, song: Song) -> str:
+        """Summarize why a song matched the user's preferences."""
         score, reasons = score_song(asdict(user), asdict(song))
         reason_text = ", ".join(reasons)
         return f"Score {score:.2f}: {reason_text}"
 
 def load_songs(csv_path: str) -> List[Dict]:
-    """
-    Loads songs from a CSV file.
-    Required by src/main.py
-    """
+    """Load songs from a CSV file into typed dictionaries."""
     print(f"Loading songs from {csv_path}...")
 
     songs: List[Dict] = []
@@ -79,13 +78,11 @@ def load_songs(csv_path: str) -> List[Dict]:
     return songs
 
 def _get_preference(user_prefs: Dict, preferred_key: str, legacy_key: str, default=None):
+    """Read a user preference while supporting legacy key names."""
     return user_prefs.get(preferred_key, user_prefs.get(legacy_key, default))
 
 def score_song(user_prefs: Dict, song: Dict) -> Tuple[float, List[str]]:
-    """
-    Scores one song against a user's taste profile.
-    Returns the numeric score and a list of human-readable reasons.
-    """
+    """Score one song and return the score plus explanation snippets."""
     reasons: List[str] = []
     score = 0.0
 
@@ -121,10 +118,7 @@ def score_song(user_prefs: Dict, song: Dict) -> Tuple[float, List[str]]:
     return score, reasons
 
 def recommend_songs(user_prefs: Dict, songs: List[Dict], k: int = 5) -> List[Tuple[Dict, float, str]]:
-    """
-    Functional implementation of the recommendation logic.
-    Required by src/main.py
-    """
+    """Rank the catalog by score and return the top-k recommendations."""
     favorite_mood = _get_preference(user_prefs, "favorite_mood", "mood")
     favorite_genre = _get_preference(user_prefs, "favorite_genre", "genre")
 
